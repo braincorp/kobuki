@@ -90,6 +90,7 @@ KobukiRos::KobukiRos(std::string& node_name) :
   updater.add(gyro_diagnostics);
   updater.add(dinput_diagnostics);
   updater.add(ainput_diagnostics);
+  use_gyro_imu_heading = true;
 }
 
 /**
@@ -103,6 +104,8 @@ KobukiRos::~KobukiRos()
 
 bool KobukiRos::init(ros::NodeHandle& nh)
 {
+   ROS_ERROR_STREAM("BC Modified Kobuki : driver is being used...");
+
   /*********************
    ** Communications
    **********************/
@@ -200,6 +203,16 @@ bool KobukiRos::init(ros::NodeHandle& nh)
     }
   }
 
+  if (!nh.getParam("use_gyro_imu_heading", use_gyro_imu_heading)) {
+    ROS_WARN_STREAM("Kobuki : no param server setting for use_gyro_imu_heading, using default [" << use_gyro_imu_heading << "][" << name << "].");
+  } else {
+    if ( use_gyro_imu_heading ) {
+      ROS_ERROR_STREAM("Kobuki : using gyro imu data for heading [" << name << "].");
+    } else {
+      ROS_ERROR_STREAM("Kobuki : using kobuki imu data for heading [" << name << "].");
+    }
+  }
+
   odometry.init(nh, name);
 
   /*********************
@@ -233,9 +246,35 @@ bool KobukiRos::init(ros::NodeHandle& nh)
     }
     return false;
   }
+
+  if (use_gyro_imu_heading)  {
+      calibrate();
+  }
+
   // kobuki.printSigSlotConnections();
   return true;
 }
+
+void KobukiRos::calibrate()
+{
+    // start from a known state of odometry
+    const CoreSensors::Data data = kobuki.getCoreSensorData();
+    gyro_heading.resetOdometry();
+
+    // gyro-calibration here
+    if (!gyro_heading.is_calibrated())
+        ros::Duration(5.0).sleep(); // wait for some data to come in.
+    else
+        return;
+
+    while(!gyro_heading.is_calibrated()) 
+    {
+        ThreeAxisGyro::Data data = kobuki.getRawInertiaData();
+        gyro_heading.calibrate(data);
+        ros::Duration(1./50).sleep(); // sampling at 50 Hz
+    }
+}
+
 /**
  * This is a worker function that runs in a background thread initiated by
  * the nodelet. It gathers diagnostics information from the kobuki driver,

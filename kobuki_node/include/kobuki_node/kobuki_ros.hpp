@@ -74,6 +74,7 @@
 #include <kobuki_driver/kobuki.hpp>
 #include "diagnostics.hpp"
 #include "odometry.hpp"
+#include "gyro_heading.hpp"
 
 /*****************************************************************************
  ** Namespaces
@@ -88,6 +89,7 @@ public:
   ~KobukiRos();
   bool init(ros::NodeHandle& nh);
   bool update();
+  void calibrate();
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 private:
@@ -98,8 +100,10 @@ private:
   Kobuki kobuki;
   sensor_msgs::JointState joint_states;
   Odometry odometry;
+  GyroHeading gyro_heading;  // updated gyro heading calculation from raw values...
   bool cmd_vel_timed_out_; // stops warning spam when cmd_vel flags as timed out more than once in a row
   bool serial_timed_out_; // stops warning spam when serial connection timed out more than once in a row
+  bool use_gyro_imu_heading; // when true use gyro_raw based imu heading calculation, else use default 
 
   /*********************
    ** Ros Comms

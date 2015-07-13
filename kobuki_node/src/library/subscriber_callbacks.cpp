@@ -201,6 +201,8 @@ void KobukiRos::subscribeResetOdometry(const std_msgs::EmptyConstPtr /* msg */)
   joint_states.velocity[1] = 0.0;
   odometry.resetOdometry();
   kobuki.resetOdometry();
+  const CoreSensors::Data data = kobuki.getCoreSensorData();
+  gyro_heading.resetOdometry(); 
   return;
 }
 

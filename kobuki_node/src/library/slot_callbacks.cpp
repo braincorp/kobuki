@@ -105,7 +105,18 @@ void KobukiRos::publishWheelState()
                              joint_states.position[1], joint_states.velocity[1]);  // right wheel
 
   // Update and publish odometry and joint states
-  odometry.update(pose_update, pose_update_rates, kobuki.getHeading(), kobuki.getAngularVelocity());
+  double imu_heading, imu_angular_velocity;
+  imu_heading = kobuki.getHeading();
+  imu_angular_velocity = kobuki.getAngularVelocity();
+
+  if (use_gyro_imu_heading) {
+      const CoreSensors::Data data = kobuki.getCoreSensorData();
+      gyro_heading.update(imu_heading, imu_angular_velocity, kobuki.getRawInertiaData(), data.left_encoder, data.right_encoder);
+      imu_heading = gyro_heading.getHeading();
+      imu_angular_velocity = gyro_heading.getAngularVelocity();
+  }
+
+  odometry.update(pose_update, pose_update_rates, imu_heading, imu_angular_velocity);
 
   if (ros::ok())
   {

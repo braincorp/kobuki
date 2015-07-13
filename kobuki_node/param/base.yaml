@@ -34,3 +34,6 @@ odom_frame: odom
 
 # Name of the base TF frame  (string, default: base_footprint)
 base_frame: base_footprint
+
+# set below to true to over-ride kobuki_imu_heading and use modified heading calculations
+use_gyro_imu_heading: false
