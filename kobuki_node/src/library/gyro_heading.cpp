@@ -5,11 +5,8 @@
 namespace kobuki 
 {
 
-void GyroHeading::update(double new_heading, double new_angular_velocity, ThreeAxisGyro::Data data, int new_left_encoder, int new_right_encoder)
+void GyroHeading::update(ThreeAxisGyro::Data data, int new_left_encoder, int new_right_encoder)
 { 
-    kobuki_heading = new_heading;
-    kobuki_angular_velocity = new_angular_velocity;
-
     // initialize
     if (left_encoder == -1) {
         left_encoder = new_left_encoder;
@@ -45,17 +42,20 @@ void GyroHeading::update(double new_heading, double new_angular_velocity, ThreeA
             }
         }
 
-        //  stores the 
-        heading_gyro = angle[2];
         left_encoder = new_left_encoder;
         right_encoder = new_right_encoder;
         //fprintf(fp_gyro, "%5.5f,%5.5f,%5.5f,%5.5f\n", heading_gyro, angular_velocity[2], kobuki_heading, kobuki_angular_velocity);
+    }
+    // very slight change in the wheel encoder values, ignore gyro measurement and set the angular velocity to zero
+    else {
+        for (int i=0; i < 3; i++) {
+            angular_velocity[i] = 0.0;
+        }
     }
 }
 
 GyroHeading::GyroHeading()
 {
-
     prev_frame_id = -1;
     nsamples = 0;
     heading_gyro = 0.0;
@@ -76,12 +76,14 @@ GyroHeading::GyroHeading()
            offset[i] = 0;
     }
     //fp_gyro = fopen("gyro_calculation.csv", "w");
+    resetOdometry();
 }
 
 void GyroHeading::resetOdometry()
 {
     for (int i=0; i < 3; i++) {
         angle[i] = 0.0;
+        angular_velocity[i] = 0.0;
     }
 }
 

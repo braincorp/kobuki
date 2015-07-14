@@ -30,7 +30,7 @@ Odometry::Odometry () :
   publish_tf(true)
 {};
 
-void Odometry::init(ros::NodeHandle& nh, const std::string& name) {
+void Odometry::init(ros::NodeHandle& nh, const std::string& name, const std::string& pub_name) {
   double timeout;
   nh.param("cmd_vel_timeout", timeout, 0.6);
   cmd_vel_timeout.fromSec(timeout);
@@ -73,7 +73,8 @@ void Odometry::init(ros::NodeHandle& nh, const std::string& name) {
 
   pose.setIdentity();
 
-  odom_publisher = nh.advertise<nav_msgs::Odometry>("odom", 50); // topic name and queue size
+  ROS_ERROR_STREAM("Kobuki : odom name" << pub_name);
+  odom_publisher = nh.advertise<nav_msgs::Odometry>(pub_name, 50); // topic name and queue size
 }
 
 bool Odometry::commandTimeout() const {

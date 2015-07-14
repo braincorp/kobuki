@@ -61,6 +61,7 @@ void KobukiRos::subscribeVelocityCommand(const geometry_msgs::TwistConstPtr msg)
     ROS_DEBUG_STREAM("Kobuki : velocity command received [" << msg->linear.x << "],[" << msg->angular.z << "]");
     kobuki.setBaseControl(msg->linear.x, msg->angular.z);
     odometry.resetTimeout();
+    odometry_bc.resetTimeout();
   }
   return;
 }
@@ -194,12 +195,13 @@ void KobukiRos::subscribeSoundCommand(const kobuki_msgs::SoundConstPtr msg)
  */
 void KobukiRos::subscribeResetOdometry(const std_msgs::EmptyConstPtr /* msg */)
 {
-  ROS_INFO_STREAM("Kobuki : Resetting the odometry. [" << name << "].");
+  ROS_ERROR_STREAM("Kobuki : Resetting the odometry. [" << name << "].");
   joint_states.position[0] = 0.0; // wheel_left
   joint_states.velocity[0] = 0.0;
   joint_states.position[1] = 0.0; // wheel_right
   joint_states.velocity[1] = 0.0;
   odometry.resetOdometry();
+  odometry_bc.resetOdometry();
   kobuki.resetOdometry();
   const CoreSensors::Data data = kobuki.getCoreSensorData();
   gyro_heading.resetOdometry(); 
@@ -213,12 +215,14 @@ void KobukiRos::subscribeMotorPower(const kobuki_msgs::MotorPowerConstPtr msg)
     ROS_INFO_STREAM("Kobuki : Firing up the motors. [" << name << "]");
     kobuki.enable();
     odometry.resetTimeout();
+    odometry_bc.resetTimeout();
   }
   else if (msg->state == kobuki_msgs::MotorPower::OFF)
   {
     kobuki.disable();
     ROS_INFO_STREAM("Kobuki : Shutting down the motors. [" << name << "]");
     odometry.resetTimeout();
+    odometry_bc.resetTimeout();
   }
   else
   {

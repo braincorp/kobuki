@@ -104,19 +104,12 @@ void KobukiRos::publishWheelState()
   kobuki.getWheelJointStates(joint_states.position[0], joint_states.velocity[0],   // left wheel
                              joint_states.position[1], joint_states.velocity[1]);  // right wheel
 
-  // Update and publish odometry and joint states
-  double imu_heading, imu_angular_velocity;
-  imu_heading = kobuki.getHeading();
-  imu_angular_velocity = kobuki.getAngularVelocity();
+  // gyro_heading based calculations
+  const CoreSensors::Data data = kobuki.getCoreSensorData();
+  gyro_heading.update(kobuki.getRawInertiaData(), data.left_encoder, data.right_encoder);
 
-  if (use_gyro_imu_heading) {
-      const CoreSensors::Data data = kobuki.getCoreSensorData();
-      gyro_heading.update(imu_heading, imu_angular_velocity, kobuki.getRawInertiaData(), data.left_encoder, data.right_encoder);
-      imu_heading = gyro_heading.getHeading();
-      imu_angular_velocity = gyro_heading.getAngularVelocity();
-  }
-
-  odometry.update(pose_update, pose_update_rates, imu_heading, imu_angular_velocity);
+  odometry.update(pose_update, pose_update_rates, kobuki.getHeading(), kobuki.getAngularVelocity());
+  odometry_bc.update(pose_update, pose_update_rates, gyro_heading.getHeading(), gyro_heading.getAngularVelocity());
 
   if (ros::ok())
   {
@@ -129,34 +122,46 @@ void KobukiRos::publishInertia()
 {
   if (ros::ok())
   {
-    if (imu_data_publisher.getNumSubscribers() > 0)
-    {
-      // Publish as shared pointer to leverage the nodelets' zero-copy pub/sub feature
-      sensor_msgs::ImuPtr msg(new sensor_msgs::Imu);
+      ros::Publisher* imu_pubs[] = {&imu_data_publisher, &imu_data_publisher_bc};
 
-      msg->header.frame_id = "gyro_link";
-      msg->header.stamp = ros::Time::now();
+      for (int i=0; i < 2; i++) {
+          
+          if (imu_pubs[i]->getNumSubscribers() > 0)
+          {
+              // Publish as shared pointer to leverage the nodelets' zero-copy pub/sub feature
+              sensor_msgs::ImuPtr msg(new sensor_msgs::Imu);
 
-      msg->orientation = tf::createQuaternionMsgFromRollPitchYaw(0.0, 0.0, kobuki.getHeading());
+              const CoreSensors::Data data = kobuki.getCoreSensorData();
+              msg->header.frame_id = "gyro_link";
+              msg->header.stamp = ros::Time::now();
 
-      // set a non-zero covariance on unused dimensions (pitch and roll); this is a requirement of robot_pose_ekf
-      // set yaw covariance as very low, to make it dominate over the odometry heading when combined
-      // 1: fill once, as its always the same;  2: using an invented value; cannot we get a realistic estimation?
-      msg->orientation_covariance[0] = DBL_MAX;
-      msg->orientation_covariance[4] = DBL_MAX;
-      msg->orientation_covariance[8] = 0.05;
+              if (i == 0)
+                  msg->orientation = tf::createQuaternionMsgFromRollPitchYaw(0.0, 0.0, kobuki.getHeading());
+              else
+                  msg->orientation = tf::createQuaternionMsgFromRollPitchYaw(0.0, 0.0, gyro_heading.getHeading());
 
-      // fill angular velocity; we ignore acceleration for now
-      msg->angular_velocity.z = kobuki.getAngularVelocity();
+              // set a non-zero covariance on unused dimensions (pitch and roll); this is a requirement of robot_pose_ekf
+              // set yaw covariance as very low, to make it dominate over the odometry heading when combined
+              // 1: fill once, as its always the same;  2: using an invented value; cannot we get a realistic estimation?
+              msg->orientation_covariance[0] = DBL_MAX;
+              msg->orientation_covariance[4] = DBL_MAX;
+              msg->orientation_covariance[8] = 0.05;
 
-      // angular velocity covariance; useless by now, but robot_pose_ekf's
-      // roadmap claims that it will compute velocities in the future
-      msg->angular_velocity_covariance[0] = DBL_MAX;
-      msg->angular_velocity_covariance[4] = DBL_MAX;
-      msg->angular_velocity_covariance[8] = 0.05;
+              // fill angular velocity; we ignore acceleration for now
+              if (i == 0)
+                  msg->angular_velocity.z = kobuki.getAngularVelocity();
+              else
+                  msg->angular_velocity.z = gyro_heading.getAngularVelocity();
 
-      imu_data_publisher.publish(msg);
-    }
+              // angular velocity covariance; useless by now, but robot_pose_ekf's
+              // roadmap claims that it will compute velocities in the future
+              msg->angular_velocity_covariance[0] = DBL_MAX;
+              msg->angular_velocity_covariance[4] = DBL_MAX;
+              msg->angular_velocity_covariance[8] = 0.05;
+
+              imu_pubs[i]->publish(msg);
+          }
+      }
   }
 }
 

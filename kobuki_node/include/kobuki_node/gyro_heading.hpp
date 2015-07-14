@@ -19,15 +19,14 @@ class GyroHeading {
 public:
   GyroHeading();
   ~GyroHeading() { fclose(fp_gyro); }
-  void update(double new_heading, double new_angular_velocity, ThreeAxisGyro::Data values, int new_left_encoder, int new_right_encoder);
+  void update(ThreeAxisGyro::Data values, int new_left_encoder, int new_right_encoder);
   void calibrate(ThreeAxisGyro::Data& values);
   bool is_calibrated() { return calibration_done; }
   void resetOdometry();
-  double getHeading() { return heading_gyro; }
+  double getHeading() { return angle[2]; }
   double getAngularVelocity() { return angular_velocity[2]; }
 
 private:
-  double kobuki_heading, kobuki_angular_velocity;
   double heading_gyro;
   int offset[3];
   float angle[3], angular_velocity[3];

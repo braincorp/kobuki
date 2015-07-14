@@ -39,7 +39,7 @@ namespace kobuki {
 class Odometry {
 public:
   Odometry();
-  void init(ros::NodeHandle& nh, const std::string& name);
+  void init(ros::NodeHandle& nh, const std::string& name, const std::string& pub_name);
   bool commandTimeout() const;
   void update(const ecl::Pose2D<double> &pose_update, ecl::linear_algebra::Vector3d &pose_update_rates,
               double imu_heading, double imu_angular_velocity);

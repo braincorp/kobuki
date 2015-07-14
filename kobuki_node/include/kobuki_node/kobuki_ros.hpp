@@ -100,6 +100,7 @@ private:
   Kobuki kobuki;
   sensor_msgs::JointState joint_states;
   Odometry odometry;
+  Odometry odometry_bc;
   GyroHeading gyro_heading;  // updated gyro heading calculation from raw values...
   bool cmd_vel_timed_out_; // stops warning spam when cmd_vel flags as timed out more than once in a row
   bool serial_timed_out_; // stops warning spam when serial connection timed out more than once in a row
@@ -109,7 +110,7 @@ private:
    ** Ros Comms
    **********************/
   ros::Publisher version_info_publisher, controller_info_publisher;
-  ros::Publisher imu_data_publisher, sensor_state_publisher, joint_state_publisher, dock_ir_publisher, raw_imu_data_publisher;
+  ros::Publisher imu_data_publisher, imu_data_publisher_bc, sensor_state_publisher, joint_state_publisher, dock_ir_publisher, raw_imu_data_publisher;
   ros::Publisher button_event_publisher, input_event_publisher, robot_event_publisher;
   ros::Publisher bumper_event_publisher, cliff_event_publisher, wheel_event_publisher, power_event_publisher;
   ros::Publisher raw_data_command_publisher, raw_data_stream_publisher, raw_control_command_publisher;

@@ -213,7 +213,8 @@ bool KobukiRos::init(ros::NodeHandle& nh)
     }
   }
 
-  odometry.init(nh, name);
+  odometry.init(nh, name, std::string("odom"));
+  odometry_bc.init(nh, name, std::string("odom_bc"));
 
   /*********************
    ** Driver Init
@@ -361,6 +362,7 @@ void KobukiRos::advertiseTopics(ros::NodeHandle& nh)
   sensor_state_publisher = nh.advertise < kobuki_msgs::SensorState > ("sensors/core", 100);
   dock_ir_publisher = nh.advertise < kobuki_msgs::DockInfraRed > ("sensors/dock_ir", 100);
   imu_data_publisher = nh.advertise < sensor_msgs::Imu > ("sensors/imu_data", 100);
+  imu_data_publisher_bc = nh.advertise < sensor_msgs::Imu > ("sensors/imu_data_bc", 100);
   raw_imu_data_publisher = nh.advertise < sensor_msgs::Imu > ("sensors/imu_data_raw", 100);
   raw_data_command_publisher = nh.advertise< std_msgs::String > ("debug/raw_data_command", 100);
   raw_data_stream_publisher = nh.advertise< std_msgs::String > ("debug/raw_data_stream", 100);
