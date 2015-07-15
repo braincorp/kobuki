@@ -213,8 +213,16 @@ bool KobukiRos::init(ros::NodeHandle& nh)
     }
   }
 
-  odometry.init(nh, name, std::string("odom"));
-  odometry_bc.init(nh, name, std::string("odom_bc"));
+  if (use_gyro_imu_heading) {
+      // select the bc odometry for publishing in /odom and also enable it to publish to /tf
+      odometry.init(nh, name, std::string("odom_old"), false);
+      odometry_bc.init(nh, name, std::string("odom"), true);
+  } 
+  else {
+      // when use_gyro_imu_heading is false, use original odometry to publish  to /odom and to /tf
+      odometry.init(nh, name, std::string("odom"), true);
+      odometry_bc.init(nh, name, std::string("odom_bc"), false);
+  }
   gyro_heading.init(nh, name);
 
   /*********************

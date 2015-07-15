@@ -39,7 +39,7 @@ namespace kobuki {
 class Odometry {
 public:
   Odometry();
-  void init(ros::NodeHandle& nh, const std::string& name, const std::string& pub_name);
+  void init(ros::NodeHandle& nh, const std::string& name, const std::string& pub_name, bool _enable_odom_tf);
   bool commandTimeout() const;
   void update(const ecl::Pose2D<double> &pose_update, ecl::linear_algebra::Vector3d &pose_update_rates,
               double imu_heading, double imu_angular_velocity);
@@ -56,6 +56,7 @@ private:
   ros::Time last_cmd_time;
   bool publish_tf;
   bool use_imu_heading;
+  bool enable_odom_tf;  // true if odom selected for publishing to tf
   tf::TransformBroadcaster odom_broadcaster;
   ros::Publisher odom_publisher;
 

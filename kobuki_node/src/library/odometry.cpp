@@ -27,10 +27,11 @@ Odometry::Odometry () :
   odom_frame("odom"),
   base_frame("base_footprint"),
   use_imu_heading(true),
-  publish_tf(true)
+  publish_tf(true),
+  enable_odom_tf(false)
 {};
 
-void Odometry::init(ros::NodeHandle& nh, const std::string& name, const std::string& pub_name) {
+void Odometry::init(ros::NodeHandle& nh, const std::string& name, const std::string& pub_name, bool _enable_odom_tf) {
   double timeout;
   nh.param("cmd_vel_timeout", timeout, 0.6);
   cmd_vel_timeout.fromSec(timeout);
@@ -67,7 +68,7 @@ void Odometry::init(ros::NodeHandle& nh, const std::string& name, const std::str
       ROS_INFO_STREAM("Kobuki : using encoders for heading (see robot_pose_ekf) [" << name << "].");
     }
   }
-
+ 
   odom_trans.header.frame_id = odom_frame;
   odom_trans.child_frame_id = base_frame;
 
@@ -75,6 +76,7 @@ void Odometry::init(ros::NodeHandle& nh, const std::string& name, const std::str
 
   ROS_ERROR_STREAM("Kobuki : odom name" << pub_name);
   odom_publisher = nh.advertise<nav_msgs::Odometry>(pub_name, 50); // topic name and queue size
+  enable_odom_tf = _enable_odom_tf;
 }
 
 bool Odometry::commandTimeout() const {
@@ -110,7 +112,7 @@ void Odometry::update(const ecl::Pose2D<double> &pose_update, ecl::linear_algebr
 
 void Odometry::publishTransform(const geometry_msgs::Quaternion &odom_quat)
 {
-  if (publish_tf == false)
+  if ((publish_tf == false) || (enable_odom_tf == false))
     return;
 
   odom_trans.header.stamp = ros::Time::now();
