@@ -215,6 +215,7 @@ bool KobukiRos::init(ros::NodeHandle& nh)
 
   odometry.init(nh, name, std::string("odom"));
   odometry_bc.init(nh, name, std::string("odom_bc"));
+  gyro_heading.init(nh, name);
 
   /*********************
    ** Driver Init

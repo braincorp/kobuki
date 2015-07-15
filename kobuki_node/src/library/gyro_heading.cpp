@@ -21,6 +21,7 @@ void GyroHeading::update(ThreeAxisGyro::Data data, int new_left_encoder, int new
 
         // calibrate gyro here
         const double digit_to_dps = 0.00875; // digit to deg/s ratio, comes from datasheet of 3d gyro[L3G4200D].
+        double scale_dps = gyro_scale_factor * digit_to_dps;
         unsigned int length = data.followed_data_length/3;
         const double dt = 1.0/100.0;   // gyro at 100 Hz
 
@@ -31,9 +32,9 @@ void GyroHeading::update(ThreeAxisGyro::Data data, int new_left_encoder, int new
         for (unsigned int i=0; i<length; i++) {
 
             // Sensing axis of 3d gyro is not match with robot. It is rotated 90 degree counterclockwise about z-axis.
-            angular_velocity[0] = angles::from_degrees( -digit_to_dps * ((short)data.data[i*3+1] - offset[1] ));
-            angular_velocity[1] = angles::from_degrees(  digit_to_dps * ((short)data.data[i*3+0] - offset[0] ));
-            angular_velocity[2] = angles::from_degrees(  digit_to_dps * ((short)data.data[i*3+2] - offset[2] ));
+            angular_velocity[0] = angles::from_degrees( -scale_dps * ((short)data.data[i*3+1] - offset[1] ));
+            angular_velocity[1] = angles::from_degrees(  scale_dps * ((short)data.data[i*3+0] - offset[0] ));
+            angular_velocity[2] = angles::from_degrees(  scale_dps * ((short)data.data[i*3+2] - offset[2] ));
             
             for (unsigned int j=0; j < 3; j++) {
                 angle[j] = angle[j] + angular_velocity[j]*dt;  // integrate basic
@@ -52,6 +53,20 @@ void GyroHeading::update(ThreeAxisGyro::Data data, int new_left_encoder, int new
             angular_velocity[i] = 0.0;
         }
     }
+}
+
+void GyroHeading::init(ros::NodeHandle& nh, const std::string& name)
+{
+  if (!nh.getParam("gyro_scale_factor", gyro_scale_factor)) {
+    ROS_WARN_STREAM("Kobuki : no param server setting for gyro_scale_factor, using default [" << gyro_scale_factor << "][" << name << "].");
+  } else {
+    if ( gyro_scale_factor ) {
+      ROS_INFO_STREAM("Kobuki : using imu data for heading [" << name << "].");
+    } else {
+      ROS_INFO_STREAM("Kobuki : using encoders for heading (see robot_pose_ekf) [" << name << "].");
+    }
+  }
+  gyro_scale_factor = 1.0 / gyro_scale_factor;
 }
 
 GyroHeading::GyroHeading()

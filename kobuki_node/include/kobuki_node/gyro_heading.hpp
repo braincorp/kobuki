@@ -19,6 +19,7 @@ class GyroHeading {
 public:
   GyroHeading();
   ~GyroHeading() { fclose(fp_gyro); }
+  void init(ros::NodeHandle& nh, const std::string& name);
   void update(ThreeAxisGyro::Data values, int new_left_encoder, int new_right_encoder);
   void calibrate(ThreeAxisGyro::Data& values);
   bool is_calibrated() { return calibration_done; }
@@ -31,6 +32,7 @@ private:
   int offset[3];
   float angle[3], angular_velocity[3];
   int left_encoder, right_encoder;
+  double gyro_scale_factor;
   int nsamples;
   int prev_frame_id;
   bool calibration_done;

@@ -37,3 +37,6 @@ base_frame: base_footprint
 
 # set below to true to over-ride kobuki_imu_heading and use modified heading calculations
 use_gyro_imu_heading: false
+
+# calibrate gyro scale factor
+gyro_scale_factor: 0.977138
