@@ -33,12 +33,10 @@ void GyroHeading::update(ThreeAxisGyro::Data data, int new_left_encoder, int new
         angular_velocity[1] = angles::from_degrees(  scale_dps * ((short)data.data[i*3+0] - offset[0] ));
         angular_velocity[2] = angles::from_degrees(  scale_dps * ((short)data.data[i*3+2] - offset[2] ));
 
-        for (unsigned int j=0; j < 3; j++)
-            if (angular_velocity[j] < 0.008) 
-                angular_velocity[j] = 0.0;
-
         for (unsigned int j=0; j < 3; j++) {
-            angle[j] = angle[j] + angular_velocity[j]*dt;  // integrate basic
+            // threshold the angular velocity limit
+            if (angular_velocity[j] >= 0.010) 
+                angle[j] = angle[j] + angular_velocity[j]*dt;  // integrate basic
             //integration(i) = integration(i-1) + 1⁄6 ( vali-3 + 2 vali-2 + 2 vali-1 + vali) 
             angle[j] = angles::normalize_angle(angle[j]);  // limit to -pi to +pi
         }
