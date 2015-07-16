@@ -16,43 +16,37 @@ void GyroHeading::update(ThreeAxisGyro::Data data, int new_left_encoder, int new
     int delta_left_encoder =  abs(new_left_encoder - left_encoder);
     int delta_right_encoder = abs(new_right_encoder - right_encoder);
 
-    // check if significant encoder change has happned
-    if ((delta_left_encoder > 5) || (delta_right_encoder > 5)) {
+    // calibrate gyro here
+    const double digit_to_dps = 0.00875; // digit to deg/s ratio, comes from datasheet of 3d gyro[L3G4200D].
+    double scale_dps = gyro_scale_factor * digit_to_dps;
+    unsigned int length = data.followed_data_length/3;
+    const double dt = 1.0/100.0;   // gyro at 100 Hz
 
-        // calibrate gyro here
-        const double digit_to_dps = 0.00875; // digit to deg/s ratio, comes from datasheet of 3d gyro[L3G4200D].
-        double scale_dps = gyro_scale_factor * digit_to_dps;
-        unsigned int length = data.followed_data_length/3;
-        const double dt = 1.0/100.0;   // gyro at 100 Hz
+    if (data.frame_id == prev_frame_id) // same as last frame, so no change
+        return;
 
-        if (data.frame_id == prev_frame_id) // same as last frame, so no change
-            return;
+    // accumulate the offset values
+    for (unsigned int i=0; i<length; i++) {
 
-        // accumulate the offset values
-        for (unsigned int i=0; i<length; i++) {
+        // Sensing axis of 3d gyro is not match with robot. It is rotated 90 degree counterclockwise about z-axis.
+        angular_velocity[0] = angles::from_degrees( -scale_dps * ((short)data.data[i*3+1] - offset[1] ));
+        angular_velocity[1] = angles::from_degrees(  scale_dps * ((short)data.data[i*3+0] - offset[0] ));
+        angular_velocity[2] = angles::from_degrees(  scale_dps * ((short)data.data[i*3+2] - offset[2] ));
 
-            // Sensing axis of 3d gyro is not match with robot. It is rotated 90 degree counterclockwise about z-axis.
-            angular_velocity[0] = angles::from_degrees( -scale_dps * ((short)data.data[i*3+1] - offset[1] ));
-            angular_velocity[1] = angles::from_degrees(  scale_dps * ((short)data.data[i*3+0] - offset[0] ));
-            angular_velocity[2] = angles::from_degrees(  scale_dps * ((short)data.data[i*3+2] - offset[2] ));
-            
-            for (unsigned int j=0; j < 3; j++) {
-                angle[j] = angle[j] + angular_velocity[j]*dt;  // integrate basic
-                //integration(i) = integration(i-1) + 1⁄6 ( vali-3 + 2 vali-2 + 2 vali-1 + vali) 
-                angle[j] = angles::normalize_angle(angle[j]);  // limit to -pi to +pi
-            }
-        }
+        for (unsigned int j=0; j < 3; j++)
+            if (angular_velocity[j] < 0.008) 
+                angular_velocity[j] = 0.0;
 
-        left_encoder = new_left_encoder;
-        right_encoder = new_right_encoder;
-        //fprintf(fp_gyro, "%5.5f,%5.5f,%5.5f,%5.5f\n", heading_gyro, angular_velocity[2], kobuki_heading, kobuki_angular_velocity);
-    }
-    // very slight change in the wheel encoder values, ignore gyro measurement and set the angular velocity to zero
-    else {
-        for (int i=0; i < 3; i++) {
-            angular_velocity[i] = 0.0;
+        for (unsigned int j=0; j < 3; j++) {
+            angle[j] = angle[j] + angular_velocity[j]*dt;  // integrate basic
+            //integration(i) = integration(i-1) + 1⁄6 ( vali-3 + 2 vali-2 + 2 vali-1 + vali) 
+            angle[j] = angles::normalize_angle(angle[j]);  // limit to -pi to +pi
         }
     }
+
+    left_encoder = new_left_encoder;
+    right_encoder = new_right_encoder;
+    //fprintf(fp_gyro, "%5.5f,%5.5f,%5.5f,%5.5f\n", heading_gyro, angular_velocity[2], kobuki_heading, kobuki_angular_velocity);
 }
 
 void GyroHeading::init(ros::NodeHandle& nh, const std::string& name)
