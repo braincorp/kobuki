@@ -106,7 +106,9 @@ void KobukiRos::publishWheelState()
 
   // gyro_heading based calculations
   const CoreSensors::Data data = kobuki.getCoreSensorData();
-  gyro_heading.update(kobuki.getRawInertiaData(), data.left_encoder, data.right_encoder);
+  const ThreeAxisGyro::Data gyro_data = kobuki.getRawInertiaData();
+  //ROS_ERROR_STREAM("timestamp: " << data.time_stamp << "frame_id: " << ((unsigned int) gyro_data.frame_id));
+  gyro_heading.update(gyro_data, kobuki.getAngularVelocity(), data.left_encoder, data.right_encoder);
 
   odometry.update(pose_update, pose_update_rates, kobuki.getHeading(), kobuki.getAngularVelocity());
   odometry_bc.update(pose_update, pose_update_rates, gyro_heading.getHeading(), gyro_heading.getAngularVelocity());
