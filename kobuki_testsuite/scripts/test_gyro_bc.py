@@ -45,12 +45,16 @@ from math import degrees
 from sensor_msgs.msg import Imu
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Quaternion
+import numpy as np
+imu_data = [[],[]]
 
 def ImuCallback(data, nid):
+  global imu_data
   quat = data.orientation
   q = [quat.x, quat.y, quat.z, quat.w]
   roll, pitch, yaw = euler_from_quaternion(q)
   sys.stdout.write("%d:%d,%4.4f,%4.4f\n" % (nid, data.header.seq, yaw, data.angular_velocity.z));
+  imu_data[nid].append((data.header.seq, yaw, data.angular_velocity.z))
   sys.stdout.flush()
 
 def OdomCallback(data, nid):
@@ -65,10 +69,14 @@ def OdomCallback(data, nid):
     sys.stdout.write("%d:%d,%4.4f,%4.4f,%4.4f\n" % (nid, data.header.seq, yaw, x, y));
 
 rospy.init_node("test_gyro")
-#rospy.Subscriber("/mobile_base/sensors/imu_data", Imu, ImuCallback, 0)
-#rospy.Subscriber("/mobile_base/sensors/imu_data_bc", Imu, ImuCallback, 1)
+rospy.Subscriber("/mobile_base/sensors/imu_data", Imu, ImuCallback, 0)
+rospy.Subscriber("/mobile_base/sensors/imu_data_bc", Imu, ImuCallback, 1)
 
-rospy.Subscriber("/odom",    Odometry, OdomCallback, 0)
-rospy.Subscriber("/odom_bc", Odometry, OdomCallback, 1)
+#rospy.Subscriber("/odom",    Odometry, OdomCallback, 0)
+#rospy.Subscriber("/odom_bc", Odometry, OdomCallback, 1)
 rospy.spin()
 print '' # for clean output
+data = np.array(imu_data)
+print data.shape
+np.savetxt("/tmp/old_imu_data.csv", data[0, :, :], delimiter=',')
+np.savetxt("/tmp/bc_imu_data.csv", data[1, :, :], delimiter=',')
